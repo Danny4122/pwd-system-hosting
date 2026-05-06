@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: pdao_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: thesisit
+      POSTGRES_DB: pdao_db
+    ports:
+      - "5432:5432"  # Changed from 5440 to 5432 for Replit compatibility
+    volumes:
+      - pdao_data:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pdao_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  php:
+    build: .  # Use local Dockerfile instead of pre-built image
+    container_name: pdao_php
+    ports:
+      - "80:80"  # Changed from 8080:80 to 80:80 for Replit
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: pdao_db
+      DB_USER: postgres
+      DB_PASSWORD: thesisit
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pdao_data:
