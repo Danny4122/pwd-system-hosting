@@ -35,6 +35,22 @@ try {
     $ins = pg_query_params($conn, "INSERT INTO application_status_history (application_id, from_status, to_status, changed_by, role, remarks) VALUES($1,$2,$3,$4,'CHO',$5)", [$appId, $from, $to, $cho_id, $remarks]);
     if ($ins === false) throw new Exception(pg_last_error($conn));
 
+    // Get applicant email for notification if status changed to final
+    if ($to === 'cho_verified' || $to === 'cho_rejected') {
+        $emailQuery = pg_query_params($conn, "SELECT a.email_address, a.last_name, a.first_name FROM applicant a JOIN application app ON a.applicant_id = app.applicant_id WHERE app.application_id = $1", [$appId]);
+        if ($emailQuery && pg_num_rows($emailQuery) > 0) {
+            $applicant = pg_fetch_assoc($emailQuery);
+            $applicantEmail = $applicant['email_address'];
+            $applicantName = $applicant['first_name'] . ' ' . $applicant['last_name'];
+
+            $statusForEmail = ($to === 'cho_verified') ? 'approved' : 'denied';
+
+            // Send email notification
+            require_once __DIR__ . '/../includes/EmailHelper.php';
+            sendStatusNotification($applicantEmail, $applicantName, $appId, $statusForEmail);
+        }
+    }
+
     pg_query($conn, 'COMMIT');
     echo json_encode(['success'=>true,'new_status'=>$to]);
 } catch (Exception $e) {

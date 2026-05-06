@@ -26,11 +26,13 @@ function sendStatusNotification($applicantEmail, $applicantName, $applicationId,
 
         $statusMessage = '';
         $statusColor = '';
-        switch ($newStatus) {
+        switch (strtolower($newStatus)) {
+            case 'accepted':
             case 'approved':
                 $statusMessage = 'Congratulations! Your PWD ID application has been approved.';
                 $statusColor = '#28a745';
                 break;
+            case 'rejected':
             case 'denied':
                 $statusMessage = 'We regret to inform you that your PWD ID application has been denied.';
                 $statusColor = '#dc3545';
